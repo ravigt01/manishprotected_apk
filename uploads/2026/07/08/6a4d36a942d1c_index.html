@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Creepster&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        /* ── Base Fix to Prevent UI from getting Cut Off ── */
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ── Core Body & Iframe Setup for Background Interaction ── */
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            background: transparent !important;
+            overflow: hidden;
+            pointer-events: none; /* Allows clicking through to the iframe */
+        }
+
+        #bgFrame {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            z-index: -1;
+            pointer-events: auto; /* Re-enables interaction for the background website */
+        }
+
+        /* Base Variables - Deep Dark with HIGH OPACITY Metallic Gold */
+        :root {
+            --g1: #c59327;      /* Dark Gold */
+            --g2: #ffd700;      /* Bright Gold */
+            --g3: #ffeb73;      /* Light Gold/Yellow */
+            --s1: #a0a0a0;      /* Dark Silver */
+            --s2: #ffffff;      /* Bright Silver */
+            --bg-dark: #000000; /* Pure Black Background */
+            --bg-panel: #0a0800;/* Extremely Dark Base for Panel */
+        }
+
+        /* Animations */
+        @keyframes sf { 0%, 100% { transform: translateY(0) rotate(-2deg) } 50% { transform: translateY(-5px) rotate(2deg) } }
+        @keyframes ss { to { transform: rotate(360deg) } }
+        @keyframes ssr { to { transform: rotate(-360deg) } }
+        @keyframes sp { 0%, 100% { transform: scale(0.86); opacity: 0.7 } 50% { transform: scale(1.15); opacity: 1 } }
+        @keyframes sa { 0%, 100% { transform: scale(0.96) rotate(-1deg) } 50% { transform: scale(1.05) rotate(1deg) } }
+        @keyframes so { 0% { opacity: 0; transform: scale(0.55) rotate(-12deg) translateY(-105px) } 55% { opacity: 1; transform: scale(1.05) rotate(4deg) translateY(7px) } 75% { transform: scale(0.96) rotate(-2deg) translateY(-3px) } 100% { opacity: 1; transform: scale(1) rotate(0) translateY(0) } }
+        @keyframes sdash { to { stroke-dashoffset: -120 } }
+        @keyframes ssh { 0% { left: -120%; opacity: 0 } 30% { opacity: 0.78 } 100% { left: 135%; opacity: 0 } }
+        @keyframes sflow { to { background-position: 260% 50% } }
+        @keyframes sl { 0%, 100% { transform: translateX(0) rotate(7deg) scaleX(0.88) } 50% { transform: translateX(17px) rotate(-8deg) scaleX(1.12) } }
+        @keyframes sr { 0%, 100% { transform: translateX(0) rotate(-7deg) scaleX(0.88) } 50% { transform: translateX(-17px) rotate(8deg) scaleX(1.12) } }
+        @keyframes spop { 0% { opacity: 0; transform: scale(0.25) rotate(-12deg) } 60% { opacity: 1; transform: scale(1.08) rotate(3deg) } 100% { transform: scale(1) rotate(0) } }
+        @keyframes imgPulse { 0%, 100% { transform: scale(0.95) } 50% { transform: scale(1.07) } }
+
+        /* Floating Icon (#mini) */
+        #mini {
+            position: absolute; right: 12px; top: 135px;
+            width: 48px; height: 48px;
+            cursor: grab; touch-action: none;
+            z-index: 2147483647;
+            user-select: none;
+            pointer-events: auto;
+        }
+        #spd-fab-core {
+            width: 100%; height: 100%; border-radius: 50%; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle at 35% 25%, rgba(255,255,255,0.3), transparent 18%), radial-gradient(circle, #2b2000, var(--bg-dark) 72%);
+            border: 1.6px solid var(--g2);
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.8), inset 0 0 12px rgba(255, 215, 0, 0.5);
+            overflow: hidden; animation: sf 3s ease-in-out infinite;
+        }
+        #spd-fab-core:before { content: ''; position: absolute; inset: -8px; border-radius: 50%; background: conic-gradient(transparent, var(--g1), transparent, var(--g3), transparent); animation: ss 2.8s linear infinite; }
+        #spd-fab-core:after { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: var(--bg-dark); z-index: 1; }
+        #spd-fab-icon { position: relative; z-index: 3; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; overflow: hidden; animation: sa 1.5s ease-in-out infinite; }
+        #spd-fab-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; filter: drop-shadow(0 0 8px var(--g2)) hue-rotate(0deg) saturate(1.5); }
+        #spd-fab-dot { position: absolute; right: -1px; top: -1px; width: 11px; height: 11px; border-radius: 50%; background: var(--g2); box-shadow: 0 0 10px var(--g2); z-index: 5; animation: sp 1.1s infinite; }
+
+        /* Main UI Box (#stage) */
+        #stage {
+            display: none; position: absolute;
+            left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 215px; height: 300px; 
+            z-index: 2147483647; touch-action: none; cursor: grab;
+            user-select: none;
+            pointer-events: auto;
+        }
+        #stage.spd-open { display: block; animation: so 0.55s cubic-bezier(0.16, 1.18, 0.35, 1) forwards; }
+        
+        .spd-websvg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; filter: drop-shadow(0 0 7px rgba(255, 215, 0, 0.8)); }
+        .d1 { stroke-dasharray: 11 8; animation: sdash 4s linear infinite; }
+        .d2 { stroke-dasharray: 7 10; animation: sdash 5.5s linear infinite reverse; }
+        
+        .spd-tent { position: absolute; width: 66px; height: 8px; border-radius: 50px; background: linear-gradient(90deg, transparent, var(--g1), var(--g2), var(--g1), transparent); box-shadow: 0 0 10px var(--g2); z-index: 2; opacity: 0.95; }
+        .spd-tent:before, .spd-tent:after { content: ''; position: absolute; width: 10px; height: 10px; border-radius: 50%; top: -1px; background: radial-gradient(circle, #ffffff, var(--g2) 60%, #1a1400); box-shadow: 0 0 10px var(--g2); }
+        .spd-tent:before { left: 13px } .spd-tent:after { right: 13px }
+        .t1 { left: -37px; top: 62px; animation: sl 2.1s ease-in-out infinite; }
+        .t2 { left: -44px; top: 138px; animation: sl 2.35s ease-in-out infinite 0.2s; }
+        .t3 { left: -37px; bottom: 54px; animation: sl 2.2s ease-in-out infinite 0.35s; }
+        .t4 { right: -37px; top: 70px; animation: sr 2.15s ease-in-out infinite 0.15s; }
+        .t5 { right: -44px; top: 155px; animation: sr 2.4s ease-in-out infinite 0.3s; }
+        .t6 { right: -37px; bottom: 48px; animation: sr 2.15s ease-in-out infinite 0.45s; }
+        
+        /* LIQUID METALLIC FLOW BORDER WRAPPER */
+        .liquid-border-wrap {
+            position: absolute; inset: 17px 10px 10px; 
+            border-radius: 26px; 
+            padding: 4px; 
+            background: var(--bg-dark); 
+            overflow: hidden; 
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+        }
+        
+        .liquid-border-wrap::before {
+            content: ''; position: absolute; 
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: conic-gradient(
+                transparent 10%, var(--g2) 20%, var(--s2) 25%, var(--g1) 30%, 
+                transparent 50%, var(--s1) 70%, var(--g3) 75%, var(--g1) 80%, transparent 90%
+            );
+            animation: ss 3s linear infinite;
+        }
+
+        /* ── DARK INTERIOR PANEL WITH HIGH OPACITY GOLD ACCENTS ── */
+        .spd-panel { 
+            position: relative; width: 100%; height: 100%; 
+            border-radius: 22px; 
+            background: var(--bg-panel); 
+            z-index: 2; padding: 10px; overflow: hidden; 
+        }
+        
+        /* HIGH OPACITY GOLD SPIDER WEB */
+        .spider-web {
+            position: absolute; inset: 0; z-index: -2; pointer-events: none;
+            background: 
+                repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 18px, rgba(255, 215, 0, 0.45) 19px, transparent 20px),
+                repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 215, 0, 0.4) 0deg, transparent 1deg, transparent 29deg, rgba(255, 215, 0, 0.4) 30deg);
+            opacity: 1; 
+        }
+
+        /* OPAQUE VIBRANT GOLD SCANNERS */
+        .scan-area {
+            position: absolute;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, transparent 50%, rgba(255, 215, 0, 0.5) 85%, rgba(255, 215, 0, 0.9) 100%);
+            z-index: -1; pointer-events: none;
+            mix-blend-mode: screen; 
+        }
+        .scan-1 { top: -100px; left: -100px; width: 280px; height: 280px; animation: ss 4s linear infinite; }
+        .scan-2 { bottom: -80px; right: -80px; width: 250px; height: 250px; animation: ssr 5s linear infinite; }
+        .scan-3 { top: 20%; left: -150px; width: 450px; height: 450px; animation: ss 7s linear infinite; }
+
+        .spd-panel:after { content: ''; position: absolute; top: 0; left: -120%; width: 78%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent); animation: ssh 4.2s linear infinite; pointer-events: none; }
+        
+        .spd-head { position: relative; z-index: 5; display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+        .spd-title { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 13px; letter-spacing: 0.7px; background: linear-gradient(to bottom, var(--s2), var(--s1)); -webkit-background-clip: text; color: transparent; text-shadow: 0 0 11px rgba(255, 255, 255, 0.6); white-space: nowrap; }
+        .spd-live { font-family: 'Share Tech Mono', monospace; font-size: 6px; color: var(--bg-dark); border: 1px solid var(--g2); border-radius: 999px; padding: 2px 5px; background: var(--g2); box-shadow: 0 0 10px var(--g2); font-weight: 900;}
+        
+        #spd-period { position: relative; z-index: 6; height: 16px; margin-bottom: 6px; border-radius: 9px; border: 1px solid var(--g2); background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; font-family: 'Share Tech Mono', monospace; font-size: 7px; color: var(--g3); letter-spacing: 0.7px; text-shadow: 0 0 6px var(--g2); }
+        
+        #spd-screen { position: relative; z-index: 5; height: 152px; border-radius: 16px; border: 1px solid rgba(255, 215, 0, 0.6); background: radial-gradient(circle at 50% 35%, rgba(255, 215, 0, 0.15), transparent 45%), linear-gradient(180deg, rgba(20, 16, 0, 0.9), #000); box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.3), 0 0 10px rgba(0, 0, 0, 0.8); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        #spd-screen:before { content: ''; position: absolute; inset: 0; opacity: 0.2; background: repeating-radial-gradient(circle at 50% 50%, transparent 0 14px, rgba(255, 215, 0, 0.4) 15px, transparent 16px); animation: ss 20s linear infinite; }
+        
+        .spd-c { position: absolute; width: 17px; height: 17px; z-index: 4; }
+        .spd-c:before, .spd-c:after { content: ''; position: absolute; background: var(--g2); box-shadow: 0 0 8px var(--g2); }
+        .spd-c:before { width: 17px; height: 2px } .spd-c:after { width: 2px; height: 17px }
+        .c1 { top: 8px; left: 8px } .c1:before, .c1:after { top: 0; left: 0 }
+        .c2 { top: 8px; right: 8px } .c2:before, .c2:after { top: 0; right: 0 }
+        .c3 { bottom: 8px; left: 8px } .c3:before, .c3:after { bottom: 0; left: 0 }
+        .c4 { bottom: 8px; right: 8px } .c4:before, .c4:after { bottom: 0; right: 0 }
+        
+        #spd-ui { position: relative; z-index: 8; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        
+        /* Views CSS */
+        .box { text-align: center; padding: 7px; width: 100%; }
+        .mark { width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.3), transparent 18%), radial-gradient(circle, var(--g1), #1a1400 65%, #000); border: 1.4px solid var(--g2); box-shadow: 0 0 16px rgba(255, 215, 0, 0.6), inset 0 0 14px rgba(0, 0, 0, 0.8); animation: sa 1.55s ease-in-out infinite; overflow: hidden; }
+        .mark-img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; filter: drop-shadow(0 0 8px var(--g2)); animation: imgPulse 1.2s ease-in-out infinite; }
+        .btitle { font-family: 'Orbitron', sans-serif; font-size: 14px; font-weight: 900; background: linear-gradient(to bottom, var(--s2), var(--s1)); -webkit-background-clip: text; color: transparent; letter-spacing: 0.8px; line-height: 1; text-transform: uppercase; filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5)); }
+        .bsub { font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 900; color: var(--g2); margin-top: 4px; line-height: 1; text-shadow: 0 0 8px var(--g2); }
+        .bnote { font-family: 'Share Tech Mono', monospace; font-size: 6.2px; color: #fff; margin-top: 5px; letter-spacing: 0.45px; line-height: 1.25; text-shadow: 0 0 4px rgba(255,255,255,0.4); }
+        
+        .spd-loader { text-align: center; width: 100%; }
+        .spd-spinner { position: relative; width: 70px; height: 70px; margin: 0 auto 6px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .ring { position: absolute; border-radius: 50%; border: 2px solid transparent; }
+        .r1 { inset: 0; border-top-color: rgba(255, 255, 255, 0.9); border-right-color: var(--g2); box-shadow: 0 0 8px var(--g2); animation: ss 0.9s linear infinite; }
+        .r2 { inset: 10px; border-left-color: var(--g3); border-bottom-color: var(--g1); animation: ssr 1.35s linear infinite; }
+        .r3 { inset: 22px; border: 1.4px dashed var(--g2); animation: ss 3s linear infinite; }
+        .core { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, #fff 0 5%, var(--g3) 15%, var(--g1) 45%, #050505); box-shadow: 0 0 15px var(--g2); animation: sa 1.05s ease-in-out infinite; overflow: hidden; border: 1px solid var(--s2); }
+        .core-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; filter: drop-shadow(0 0 6px var(--g2)); animation: imgPulse 1.2s ease-in-out infinite; }
+        .stage { font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 11px; letter-spacing: 0.8px; color: var(--g2); text-shadow: 0 0 10px var(--g2); }
+        .per { font-family: 'Share Tech Mono', monospace; font-size: 7px; color: #fff; margin-top: 2px; font-weight: bold;}
+        .bar { width: 108px; height: 5px; border-radius: 999px; border: 1px solid var(--g2); margin: 7px auto 0; overflow: hidden; background: rgba(0, 0, 0, 0.9); }
+        #spd-bar-fill { display: block; height: 100%; width: 0%; border-radius: 999px; background: linear-gradient(90deg, #1a1400, var(--g1), var(--g3), var(--g2)); box-shadow: 0 0 10px var(--g2); transition: width 0.12s linear; }
+        
+        /* ── RESULT BOX & NEW SOLID 3D MESH EFFECT ── */
+        .res { 
+            width: 138px; height: 105px; border-radius: 20px; 
+            background: radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.15), transparent 22%), radial-gradient(circle, #1a1400, var(--bg-dark) 75%); 
+            border: 1.5px solid var(--g2); box-shadow: 0 0 20px rgba(255, 215, 0, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.9); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            animation: spop 0.5s cubic-bezier(0.15, 1.25, 0.35, 1) forwards; 
+            position: relative; overflow: hidden; 
+            perspective: 800px;
+            transform-style: preserve-3d;
+        }
+
+        /* 3 Curved Solid Rectangles with Tended 3D Animation */
+        .res-mesh {
+            position: absolute;
+            top: 50%; left: 50%;
+            border-radius: 20px;
+            pointer-events: none;
+            z-index: 1; 
+        }
+        
+        .m1 { 
+            width: 130px; height: 100px; margin-top: -50px; margin-left: -65px;
+            border: 1.5px solid rgba(255, 215, 0, 0.8); box-shadow: 0 0 8px rgba(255, 215, 0, 0.4); 
+            animation: rx 5s linear infinite; 
+        }
+        
+        .m2 { 
+            width: 110px; height: 110px; margin-top: -55px; margin-left: -55px;
+            border: 1.5px solid rgba(255, 235, 115, 0.6); box-shadow: 0 0 8px rgba(255, 235, 115, 0.3); 
+            animation: ry 6s linear infinite; 
+        }
+        
+        .m3 { 
+            width: 140px; height: 90px; margin-top: -45px; margin-left: -70px;
+            border: 1.5px solid rgba(197, 147, 39, 0.9); box-shadow: 0 0 8px rgba(197, 147, 39, 0.5); 
+            animation: rz 7s linear infinite; 
+        }
+
+        @keyframes rx { 0% { transform: rotateY(35deg) rotateZ(45deg) rotateX(0deg); } 100% { transform: rotateY(35deg) rotateZ(45deg) rotateX(360deg); } }
+        @keyframes ry { 0% { transform: rotateX(45deg) rotateZ(-35deg) rotateY(0deg); } 100% { transform: rotateX(45deg) rotateZ(-35deg) rotateY(360deg); } }
+        @keyframes rz { 0% { transform: rotateX(-40deg) rotateY(30deg) rotateZ(0deg); } 100% { transform: rotateX(-40deg) rotateY(30deg) rotateZ(360deg); } }
+
+        .rlabel, .rmain, .rsub { z-index: 5; position: relative; }
+        .rlabel { font-family: 'Share Tech Mono', monospace; font-size: 6.3px; color: var(--s2); letter-spacing: 0.8px; font-weight:bold; }
+        .rmain { margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .rbs { font-family: 'Orbitron', sans-serif; font-size: 15.2px; font-weight: 900; color: #000; letter-spacing: 1px; padding: 4.7px 7.6px; border-radius: 11px; background: linear-gradient(135deg, var(--g3), var(--g2), var(--g1)); border: 1px solid var(--s2); box-shadow: 0 0 12px var(--g2), inset 0 0 8px rgba(255, 255, 255, 0.8); line-height: 1; }
+        .rnum-img { width: 30px; height: 30px; object-fit: contain; filter: drop-shadow(0 0 12px var(--g2)); animation: imgPulse 1.2s ease-in-out infinite; }
+        .rsub { font-family: 'Share Tech Mono', monospace; margin-top: 5px; font-size: 5.8px; color: var(--s2); font-weight:bold; text-shadow: 0 0 4px rgba(255,255,255,0.5);}
+        
+        .spd-btnrow { position: relative; z-index: 6; display: flex; gap: 6px; margin-top: 8px; height: 27px; }
+        button#spd-start { flex: 1.38; height: 27px; border: 1px solid var(--g3); border-radius: 12px; color: #000; font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 10.5px; letter-spacing: 0.7px; background: linear-gradient(135deg, var(--g1), var(--g2), var(--g3), var(--g1)); background-size: 260% 260%; box-shadow: 0 0 12px var(--g2), inset 0 1px 0 rgba(255, 255, 255, 0.7), inset 0 -5px 10px rgba(0, 0, 0, 0.4); animation: sflow 3s linear infinite; cursor: pointer; padding: 0; transition: filter 0.2s; }
+        button#spd-hide { flex: 0.78; height: 27px; border-radius: 12px; color: var(--bg-dark); font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 10.5px; background: linear-gradient(180deg, var(--s2), var(--s1)); border: 1px solid #fff; box-shadow: 0 0 10px rgba(255, 255, 255, 0.4); cursor: pointer; padding: 0; }
+        button#spd-start:active, button#spd-hide:active { transform: scale(0.95); }
+        button#spd-start:disabled { filter: grayscale(1); opacity: 0.7; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <iframe id="bgFrame" src="https://www.jaiclub37.com/#/"></iframe>
+
+    <div id="mini">
+        <div id="spd-fab-core">
+            <div id="spd-fab-icon">
+                <img id="spd-fab-img" src="https://i.ibb.co/SwR0Wrs6/5071480890902384120-121.jpg" onerror="this.src='https://i.ibb.co/B5yxyQ0z/IMG-20260605-213154-022.jpg'">
+            </div>
+            <div id="spd-fab-dot"></div>
+        </div>
+    </div>
+
+    <div id="stage">
+        <svg class="spd-websvg" viewBox="0 0 210 300" preserveAspectRatio="none">
+            <path d="M105 3 L190 47 L207 150 L190 253 L105 297 L20 253 L3 150 L20 47 Z" fill="rgba(8,0,16,0.95)" stroke="rgba(255,215,0,0.4)" stroke-width="4"/>
+            <path class="d1" d="M105 3 L190 47 L207 150 L190 253 L105 297 L20 253 L3 150 L20 47 Z" fill="none" stroke="#c59327" stroke-width="2" stroke-linecap="round"/>
+            <path class="d2" d="M105 24 L173 60 L189 150 L173 240 L105 276 L37 240 L21 150 L37 60 Z" fill="none" stroke="#ffeb73" stroke-width="1.4" stroke-linecap="round" opacity=".85"/>
+            <circle cx="105" cy="150" r="4.5" fill="#ffd700"/>
+        </svg>
+        <div class="spd-tent t1"></div><div class="spd-tent t2"></div><div class="spd-tent t3"></div>
+        <div class="spd-tent t4"></div><div class="spd-tent t5"></div><div class="spd-tent t6"></div>
+        
+        <div class="liquid-border-wrap">
+            <div class="spd-panel">
+                
+                <div class="spider-web"></div>
+
+                <div class="scan-area scan-1"></div>
+                <div class="scan-area scan-2"></div>
+                <div class="scan-area scan-3"></div>
+
+                <div class="spd-head">
+                    <div class="spd-title">𝓼𝓵𝓮𝔁 𝓽𝓮𝓼𝓽 01</div>
+                    <div class="spd-live" id="spd-live">● GAME</div>
+                </div>
+                <div id="spd-period">PERIOD: ----</div>
+                <div id="spd-screen">
+                    <div class="spd-c c1"></div><div class="spd-c c2"></div><div class="spd-c c3"></div><div class="spd-c c4"></div>
+                    <div id="spd-ui"></div>
+                </div>
+                <div class="spd-btnrow">
+                    <button id="spd-start">EXECUTE</button>
+                    <button id="spd-hide">HIDE</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // System Variables
+    let isWorking = false;
+    let opened = false;
+    let lastResult = null;
+    let appPeriod = '';
+
+    // DOM Links
+    const mini = document.getElementById("mini");
+    const stage = document.getElementById("stage");
+    const ui = document.getElementById("spd-ui");
+    const live = document.getElementById("spd-live");
+    const pbox = document.getElementById("spd-period");
+    const startBtn = document.getElementById("spd-start");
+    const hideBtn = document.getElementById("spd-hide");
+
+    // Spider Assets
+    const SPD_MARK_IMG = "https://i.ibb.co/S4NqSdzt/1000189443-removebg-preview.png";
+    const SPD_CORE_IMG = "https://i.ibb.co/1Y2Z09Q6/1000189436-removebg-preview.png";
+    const SPD_NUM_IMGS = [
+        "https://i.ibb.co/bjDSynRD/num0-1-removebg-preview.png",
+        "https://i.ibb.co/6RKTP2Vb/num0-2-removebg-preview.png",
+        "https://i.ibb.co/qYRnjb3F/num0-3-removebg-preview.png",
+        "https://i.ibb.co/zhFk8bBf/num0-4-removebg-preview.png",
+        "https://i.ibb.co/8DZv6wTn/num0-5-removebg-preview.png",
+        "https://i.ibb.co/v69Y349y/num0-6-removebg-preview.png",
+        "https://i.ibb.co/hJKVjzdK/num0-7-removebg-preview.png",
+        "https://i.ibb.co/bjz1qcmR/num0-8-removebg-preview.png",
+        "https://i.ibb.co/z1KYzds/num0-9-removebg-preview.png",
+        "https://i.ibb.co/84BRwGPK/num0-10-removebg-preview.png",
+    ];
+
+    function getPeriodCode() {
+        let d = new Date();
+        let utc = new Date(d.getTime() + (d.getTimezoneOffset() * 60000));
+        let y = utc.getFullYear();
+        let m = String(utc.getMonth() + 1).padStart(2,'0');
+        let dt = String(utc.getDate()).padStart(2,'0');
+        let totalMins = (utc.getHours() * 60) + utc.getMinutes();
+        return y + m + dt + String(10001 + totalMins);
+    }
+
+    function setBtn(text, fn) {
+        startBtn.innerText = text;
+        startBtn.onclick = fn;
+        startBtn.disabled = !fn;
+    }
+
+    function stateView(title, sub, note) {
+        ui.innerHTML = `
+            <div class="box">
+                <div class="mark"><img class="mark-img" src="${SPD_MARK_IMG}"></div>
+                <div class="btitle">${title}</div>
+                <div class="bsub">${sub}</div>
+                <div class="bnote">${note}</div>
+            </div>`;
+    }
+
+    function renderState() {
+        let currentPeriod = appPeriod ? appPeriod : getPeriodCode();
+        pbox.innerHTML = 'PERIOD: <b style="color:#fff">' + currentPeriod.slice(-4) + '</b>';
+        live.innerHTML = "● GAME";
+
+        if(lastResult && lastResult.fullPeriod === currentPeriod) {
+            showResult(lastResult);
+        } else {
+            stateView("READY", "SPIDER MODE", "SYSTEM STANDBY");
+            setBtn("EXECUTE", runInjection);
+        }
+    }
+
+    async function runInjection() {
+        if(isWorking) return;
+        isWorking = true;
+        
+        let p = 0;
+        ui.innerHTML = `
+            <div class="spd-loader">
+                <div class="spd-spinner">
+                    <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+                    <div class="core"><img class="core-img" src="${SPD_CORE_IMG}"></div>
+                </div>
+                <div class="stage" id="spd-stage">BYPASSING</div>
+                <div class="per" id="spd-percent">0%</div>
+                <div class="bar"><i id="spd-bar-fill"></i></div>
+            </div>`;
+            
+        setBtn("WAIT", null);
+
+        let stages = ["ENCRYPTING", "FETCHING API", "0xDD41", "READY"];
+        
+        let timer = setInterval(() => {
+            p += Math.random() * 8 + 5;
+            if(p >= 90) p = 90; // Hold at 90% until fetch completes
+            
+            document.getElementById("spd-bar-fill").style.width = Math.floor(p) + "%";
+            document.getElementById("spd-percent").innerText = Math.floor(p) + "%";
+            document.getElementById("spd-stage").innerText = stages[Math.min(stages.length - 1, Math.floor(p / 26))];
+        }, 110);
+
+        try {
+            // Fetching logic mapped directly from the live API
+            const response = await fetch("https://draw.ar-lottery01.com/WinGo/WinGo_1M/GetHistoryIssuePage.json", {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' }
+            });
+            const data = await response.json();
+            
+            const latest = data.data.list[0];
+            const exactNum = parseInt(latest.number);
+            let currentPeriodStr = latest.issueNumber;
+            
+            let nextPeriodNum = parseInt(currentPeriodStr.slice(-4)) + 0;
+            let displayPeriod = String(nextPeriodNum).padStart(4, '0');
+            let resultBigSmall = (exactNum >= 0 && exactNum <= 4) ? "SMALL" : "BIG";
+
+            clearInterval(timer);
+            finalizeProcess(displayPeriod, currentPeriodStr, exactNum, resultBigSmall);
+
+        } catch (error) {
+            console.warn("API Error, using fallback injector.");
+            var d = new Date(); 
+            var m = d.getUTCHours() * 60 + d.getUTCMinutes(); 
+            let javaPeriod = String(10001 + m).slice(-4);
+            
+            let randomNum = Math.floor(Math.random() * 10);
+            let fallbackBigSmall = randomNum <= 4 ? "SMALL" : "BIG";
+
+            clearInterval(timer);
+            finalizeProcess(javaPeriod, javaPeriod, randomNum, fallbackBigSmall);
+        }
+    }
+
+    function finalizeProcess(displayPeriod, fullPeriod, num, bs) {
+        document.getElementById("spd-bar-fill").style.width = "100%";
+        document.getElementById("spd-percent").innerText = "100%";
+        document.getElementById("spd-stage").innerText = "SUCCESS";
+
+        setTimeout(() => {
+            lastResult = { period: displayPeriod, fullPeriod: fullPeriod, num: num, bs: bs };
+            showResult(lastResult);
+            isWorking = false;
+        }, 400);
+    }
+
+    function showResult(r) {
+        let img = SPD_NUM_IMGS[r.num] || SPD_NUM_IMGS[0];
+        pbox.innerHTML = 'PERIOD: <b style="color:#fff">' + r.period + '</b>';
+        ui.innerHTML = `
+            <div class="res">
+                <div class="res-mesh m1"></div>
+                <div class="res-mesh m2"></div>
+                <div class="res-mesh m3"></div>
+                <div class="rlabel">AI RESULT</div>
+                <div class="rmain">
+                    <span class="rbs">${r.bs}</span>
+                    <img class="rnum-img" src="${img}">
+                </div>
+                <div class="rsub">PERIOD ${r.period}</div>
+            </div>`;
+        setBtn("REPLAY", renderState);
+    }
+
+    // Advanced Drag Function ensuring touch/mouse doesn't lock up background
+    function makeDraggable(el, clickCallback) {
+        let sx = 0, sy = 0, ox = 0, oy = 0;
+        let isDragging = false;
+        let hasMoved = false;
+
+        function touchStart(e) {
+            if (e.target.tagName.toLowerCase() === 'button') return;
+            let p = e.touches ? e.touches[0] : e;
+            sx = p.clientX; sy = p.clientY;
+            let rect = el.getBoundingClientRect();
+            ox = rect.left; oy = rect.top;
+            isDragging = true;
+            hasMoved = false;
+            
+            el.style.transition = 'none';
+            el.style.right = 'auto'; el.style.bottom = 'auto';
+            el.style.left = ox + 'px'; el.style.top = oy + 'px';
+            el.style.transform = 'none';
+        }
+
+        function touchMove(e) {
+            if (!isDragging) return;
+            let p = e.touches ? e.touches[0] : e;
+            let dx = p.clientX - sx;
+            let dy = p.clientY - sy;
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved = true;
+            
+            let nx = Math.max(4, Math.min(window.innerWidth - el.offsetWidth - 4, ox + dx));
+            let ny = Math.max(4, Math.min(window.innerHeight - el.offsetHeight - 4, oy + dy));
+            
+            el.style.left = nx + 'px';
+            el.style.top = ny + 'px';
+            if (e.cancelable) e.preventDefault();
+        }
+
+        function touchEnd(e) {
+            if (!isDragging) return;
+            isDragging = false;
+            el.style.transition = "left 0.1s ease-out, top 0.1s ease-out";
+            if (!hasMoved && typeof clickCallback === 'function') {
+                clickCallback();
+            }
+        }
+
+        el.addEventListener("touchstart", touchStart, { passive: false });
+        document.addEventListener("touchmove", touchMove, { passive: false });
+        document.addEventListener("touchend", touchEnd, { passive: false });
+        el.addEventListener("mousedown", touchStart, false);
+        document.addEventListener("mousemove", touchMove, false);
+        document.addEventListener("mouseup", touchEnd, false);
+    }
+
+    function openCard() {
+        if (opened) return;
+        opened = true;
+        mini.style.display = 'none';
+        stage.style.display = 'block';
+        stage.classList.add('spd-open');
+        renderState();
+    }
+
+    function closeCard() {
+        opened = false;
+        stage.style.display = 'none';
+        stage.classList.remove('spd-open');
+        mini.style.display = 'flex';
+    }
+    
+    hideBtn.onclick = closeCard;
+    makeDraggable(mini, openCard);
+    makeDraggable(stage, null);
+
+    // Initialize state
+    renderState();
+</script>
+</body>
+</html>
